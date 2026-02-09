@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Impresoras Bice</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Dependencies -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -15,14 +17,15 @@
         .printer-card { transition: all 0.3s ease; }
         .printer-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .tab-active { background-color: #2563eb; color: white; shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .tab-inactive { background-color: white; color: #64748b; hover:bg-slate-50; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- BASE DE DATOS DE IMPRESORAS ---
         const PRINTERS_DB = {
@@ -60,35 +63,10 @@
             ],
             "Bodenor": [
                 {
-                    id: 105, name: "R.R.H.H.", model: "Brother MFC-L8900CDW", 
-                    url: "http://10.1.145.181/general/status.html", adminUrl: "http://10.1.145.181/",
-                    type: "brother_laser_bk_c_m_y_forced", 
-                    cartridges: "TN-413 (Alta) / TN-419 (Súper Alta)"
-                },
-                {
                     id: 101, name: "Piso 2 CD A", model: "Brother MFC-T925DW", 
-                    url: "http://10.1.145.148/home/status.html", // URL CORREGIDA
-                    adminUrl: "http://10.1.145.148/",
-                    type: "brother_inktank_specific", // PARSER NUEVO
+                    url: "http://10.1.145.148/general/status.html", adminUrl: "http://10.1.145.148/",
+                    type: "brother_inktank_specific", // NUEVO: Parser específico basado en tu foto
                     cartridges: "Botellas: BTD60BK / BT5001 (C/M/Y)"
-                },
-                {
-                    id: 107, name: "Piso 2 CD B", model: "Brother DCP-1610NW", 
-                    url: "http://10.1.145.200/general/status.html", adminUrl: "http://10.1.145.200/",
-                    type: "brother_dynamic_scanner",
-                    cartridges: "Tóner: TN-1060"
-                },
-                {
-                    id: 106, name: "Piso 2 Adm", model: "Brother DCP-L2540DW", 
-                    url: "http://10.1.46.4/general/status.html", adminUrl: "http://10.1.46.4/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-2370"
-                },
-                {
-                    id: 104, name: "Recepción", model: "Brother DCP-1610NW", 
-                    url: "http://10.1.145.155/general/status.html", adminUrl: "http://10.1.145.155/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-1060"
                 },
                 {
                     id: 102, name: "Transporte", model: "Brother DCP-1610NW", 
@@ -101,6 +79,30 @@
                     url: "http://10.1.46.9/general/status.html", adminUrl: "http://10.1.46.9/",
                     type: "brother_dynamic_scanner", 
                     cartridges: "Tóner: TN-3429 / TN-3449 / TN-3479"
+                },
+                {
+                    id: 104, name: "Recepción", model: "Brother DCP-1610NW", 
+                    url: "http://10.1.145.155/general/status.html", adminUrl: "http://10.1.145.155/",
+                    type: "brother_dynamic_scanner", 
+                    cartridges: "Tóner: TN-1060"
+                },
+                {
+                    id: 105, name: "R.R.H.H.", model: "Brother MFC-L8900CDW", 
+                    url: "http://10.1.145.181/general/status.html", adminUrl: "http://10.1.145.181/",
+                    type: "brother_laser_bk_c_m_y_forced", // MANTENIDO (Perfecto)
+                    cartridges: "TN-413 (Alta) / TN-419 (Súper Alta)"
+                },
+                {
+                    id: 106, name: "Piso 2 Adm", model: "Brother DCP-L2540DW", 
+                    url: "http://10.1.46.4/general/status.html", adminUrl: "http://10.1.46.4/",
+                    type: "brother_dynamic_scanner", 
+                    cartridges: "Tóner: TN-2370"
+                },
+                {
+                    id: 107, name: "Piso 2 CD B", model: "Brother DCP-1610NW", 
+                    url: "http://10.1.145.200/general/status.html", adminUrl: "http://10.1.145.200/",
+                    type: "brother_dynamic_scanner",
+                    cartridges: "Tóner: TN-1060"
                 }
             ]
         };
@@ -120,47 +122,43 @@
         };
 
         const Parsers = {
-            // --- NUEVO: PISO 2 CD A (Corregido tras diagnóstico) ---
+            // --- NUEVO: PISO 2 CD A (InkTank Specific - Basado en tu Foto) ---
             brother_inktank_specific: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
                 let status = 'online';
                 let message = 'Operativa';
                 
-                // Función auxiliar que busca específicamente el nombre del color en el atributo ALT
-                const getHeight = (colorName) => {
-                    const regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
+                // Helper para extraer altura por color buscando en la etiqueta IMG
+                // Busca <img ... magenta ... height="45">
+                const extractHeight = (colorName) => {
+                    const regex = new RegExp(`<img[^>]*?${colorName}[^>]*?height=["']?(\\d+)["']?`, 'i');
                     const match = html.match(regex);
-                    return match ? parseInt(match[1]) : 0;
+                    if (match) {
+                        return Math.min(Math.round((parseInt(match[1]) / 56) * 100), 100); // 56px max height
+                    }
+                    return -1;
                 };
 
-                const hM = getHeight("Magenta");
-                const hC = getHeight("Cyan");
-                const hY = getHeight("Yellow");
-                const hBk = getHeight("Black");
+                // Nombres exactos vistos en tu foto de inspección
+                ink.m = extractHeight('magenta');
+                ink.c = extractHeight('cyan');
+                ink.y = extractHeight('yellow');
+                ink.bk = extractHeight('black'); // En la foto sale "black.gif"
 
-                // Validación simple: Si todo es 0, algo falló
-                if (hM === 0 && hC === 0 && hY === 0 && hBk === 0) {
+                // Fallback por si acaso: si falla la búsqueda por nombre, intentar posicional
+                if (ink.m === -1 && ink.bk === -1) {
                     const imgRegex = /height=["']?(\d+)["']?/gi;
                     const matches = [...html.matchAll(imgRegex)];
                     const bars = matches.map(m => parseInt(m[1])).filter(h => h > 10 && h < 100);
                     
                     if (bars.length >= 4) {
                         const norm = (val) => Math.min(Math.round((val / 56) * 100), 100);
+                        // Orden Visual InkTank: M, C, Y, BK
                         ink.m = norm(bars[0]);
                         ink.c = norm(bars[1]);
                         ink.y = norm(bars[2]);
                         ink.bk = norm(bars[3]);
-                    } else {
-                        status = 'error';
-                        message = 'Lectura fallida';
-                        ink.bk = -1;
                     }
-                } else {
-                    const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                    ink.m = norm(hM);
-                    ink.c = norm(hC);
-                    ink.y = norm(hY);
-                    ink.bk = norm(hBk);
                 }
                 
                 return { status, message, ink };
