@@ -34,18 +34,18 @@
                 },
                 { 
                     id: 2, name: "Impresora IT Bice", model: "HP PageWide Pro 477dw", 
-                    url: "http://10.1.4.51/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.4.51/", 
+                    url: "http://10.1.104.119/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.104.119/", 
                     type: "hp_xml_verified", cartridges: "HP 974A (Estándar) / HP 974X (Alta Capacidad)"
                 }, 
                 { 
-                    id: 3, name: "Impresora B2B", model: "Brother HL-L3270CDW", 
-                    url: "http://10.1.4.59/general/status.html", adminUrl: "http://10.1.4.59/",
-                    type: "brother_laser_universal", cartridges: "TN-213 (Estándar) / TN-217 (Alta Capacidad)"
+                    id: 3, name: "Impresora B2B", model: "HP LaserJet M1212nf MFP", 
+                    url: "http://10.1.4.89/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.4.89/",
+                    type: "hp_xml_verified", cartridges: "Tóner: CE285A (85A)"
                 },
                 { 
                     id: 4, name: "Impresora Don Rodrigo", model: "Brother DCP-L3551CDW", 
                     url: "http://10.1.104.135/general/status.html", adminUrl: "http://10.1.104.135/",
-                    type: "brother_laser_universal", cartridges: "TN-213 (Estándar) / TN-217 (Alta Capacidad)"
+                    type: "brother_color_laser_robust", cartridges: "TN-213 (Estándar) / TN-217 (Alta Capacidad)"
                 }, 
                 { 
                     id: 5, name: "Impresora Marketing", model: "Brother MFC-9330CDW", 
@@ -54,8 +54,18 @@
                 },
                 { 
                     id: 6, name: "Impresora Comercial", model: "Brother MFC-L8900CDW", 
-                    url: "http://10.1.104.83/general/status.html", adminUrl: "http://10.1.104.83/",
+                    url: "http://10.1.104.84/general/status.html", adminUrl: "http://10.1.104.84/",
                     type: "brother_laser_universal", cartridges: "TN-413 (Alta) / TN-419 (Súper Alta)" 
+                },
+                { 
+                    id: 7, name: "Impresora Brother Piso 4", model: "Brother DCP-L3551CDW", 
+                    url: "http://10.1.104.80/general/status.html", adminUrl: "http://10.1.104.80/",
+                    type: "brother_color_laser_robust", cartridges: "TN-213 (Estándar) / TN-217 (Alta Capacidad)"
+                },
+                { 
+                    id: 8, name: "Impresora HP Piso 4", model: "HP PageWide Pro 477dw MFP", 
+                    url: "http://10.1.104.81/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.104.81/", 
+                    type: "hp_xml_verified", cartridges: "HP 974A (Estándar) / HP 974X (Alta Capacidad)"
                 }
             ],
             "Bodenor": [
@@ -67,9 +77,9 @@
                 },
                 {
                     id: 101, name: "Piso 2 CD A", model: "Brother MFC-T925DW", 
-                    url: "http://10.1.145.148/home/status.html", // URL CORREGIDA
+                    url: "http://10.1.145.148/home/status.html", 
                     adminUrl: "http://10.1.145.148/",
-                    type: "brother_inktank_specific", // PARSER NUEVO
+                    type: "brother_inktank_specific", 
                     cartridges: "Botellas: BTD60BK / BT5001 (C/M/Y)"
                 },
                 {
@@ -113,13 +123,67 @@
             Check: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             WifiOff: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/></svg>,
             Refresh: ({spin}) => <svg className={spin ? "animate-spin" : ""} width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
-            Settings: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            Settings: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
             Box: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
             X: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
             Building: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21V12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v9"></path></svg>
         };
 
         const Parsers = {
+            brother_color_laser_robust: (html) => {
+                const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false }; // isMono false fuerza siempre los 4 colores
+                let status = 'online';
+                let message = 'Operativa';
+                
+                const text = html.toLowerCase();
+                if (text.includes("espera")) message = "En Espera";
+                if (text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
+                if (text.includes("error") || text.includes("atasco") || text.includes("cubierta")) { status = 'error'; message = "Atención Requerida"; }
+                if (text.includes("poca tinta") || text.includes("poco tóner") || text.includes("agotado")) { status = 'warning'; message = "Tóner Bajo/Agotado"; }
+
+                // Intento 1: Buscar alturas explícitamente por el nombre del color
+                const getHeight = (colorName) => {
+                    let regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
+                    let m = html.match(regex);
+                    if (!m) {
+                        regex = new RegExp(`src=[^>]*?${colorName}[^>]*?height=["']?(\\d+)["']?`, "i");
+                        m = html.match(regex);
+                    }
+                    return m ? parseInt(m[1]) : -1;
+                };
+
+                const hC = getHeight("Cyan");
+                const hM = getHeight("Magenta");
+                const hY = getHeight("Yellow");
+                let hBk = getHeight("Black");
+                if (hBk === -1) hBk = getHeight("Bk");
+
+                const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
+
+                if (hC > -1 || hM > -1 || hY > -1 || hBk > -1) {
+                    ink.c = hC > -1 ? norm(hC) : 0;
+                    ink.m = hM > -1 ? norm(hM) : 0;
+                    ink.y = hY > -1 ? norm(hY) : 0;
+                    ink.bk = hBk > -1 ? norm(hBk) : 0;
+                } else {
+                    // Intento 2: Fallback (captura de barras puras, descartando íconos de error)
+                    const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
+                    const matches = [...html.matchAll(imgRegex)];
+                    const bars = matches.map(m => parseInt(m[1])).filter(h => h > 10 && h < 65); 
+                    
+                    if (bars.length >= 4) {
+                        ink.bk = norm(bars[0]);
+                        ink.c  = norm(bars[1]);
+                        ink.m  = norm(bars[2]);
+                        ink.y  = norm(bars[3]);
+                    } else {
+                        // Si falla o la impresora oculta las barras por un error, manda -1 para mostrar "--"
+                        ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1;
+                    }
+                }
+                return { status, message, ink };
+            },
+
             // --- NUEVO: PISO 2 CD A (Corregido tras diagnóstico) ---
             brother_inktank_specific: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
@@ -347,7 +411,7 @@
         function StockModal({ printer, stock, onClose, onSave }) {
             const [tempStock, setTempStock] = useState(stock);
             const isMono = printer.type && printer.type.includes('dynamic') && printer.ink && printer.ink.isMono;
-            const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650'));
+            const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650') || printer.model.includes('M1212nf'));
 
             const handleChange = (color, value) => {
                 setTempStock(prev => ({ ...prev, [color]: parseInt(value) || 0 }));
@@ -470,7 +534,7 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {printers.map(p => {
                             const currentStock = printerStock[p.id] || { bk: 0, c: 0, m: 0, y: 0 };
-                            const showOnlyBlack = p.ink.isMono === true;
+                            const showOnlyBlack = p.ink.isMono === true || (p.model && p.model.includes('M1212nf'));
                             return (
                                 <div key={p.id} className={`printer-card bg-white rounded-2xl border-l-[6px] p-6 flex flex-col justify-between ${p.status === 'online' ? 'border-green-500 shadow-sm' : p.status === 'warning' ? 'border-yellow-400 shadow-md ring-1 ring-yellow-100' : p.status === 'error' ? 'border-red-500 shadow-md ring-1 ring-red-100' : 'border-slate-300 opacity-80'}`}>
                                     <div>
