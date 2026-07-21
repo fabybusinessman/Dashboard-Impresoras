@@ -57,15 +57,26 @@
                     url: "http://10.1.104.84/general/status.html", adminUrl: "http://10.1.104.84/",
                     type: "brother_laser_universal", cartridges: "TN-413 (Alta) / TN-419 (Súper Alta)" 
                 },
-                { 
+                {
                     id: 7, name: "Impresora Brother Piso 4", model: "Brother DCP-L3551CDW", 
                     url: "http://10.1.104.80/general/status.html", adminUrl: "http://10.1.104.80/",
                     type: "brother_color_laser_robust", cartridges: "TN-213 (Estándar) / TN-217 (Alta Capacidad)"
                 },
-                { 
+                {
                     id: 8, name: "Impresora HP Piso 4", model: "HP PageWide Pro 477dw MFP", 
                     url: "http://10.1.104.81/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.104.81/", 
                     type: "hp_xml_verified", cartridges: "HP 974A (Estándar) / HP 974X (Alta Capacidad)"
+                },
+                {
+                    id: 9, name: "Impresora Ricoh RRHH", model: "Ricoh SP 3710DN",
+                    // URL ajustada basada en la captura para comprobar si está online
+                    url: "http://10.1.104.110/main.asp?Lang=en-us", adminUrl: "http://10.1.104.110/main.asp?Lang=en-us", fallbackUrl: "http://10.1.104.110/",
+                    type: "ricoh_generic", cartridges: "SP 3710X (Negro)"
+                },
+                {
+                    id: 10, name: "Impresora Brother RRHH", model: "Brother MFC-L6900DW", 
+                    url: "http://10.1.104.79/general/status.html", adminUrl: "http://10.1.104.79/",
+                    type: "brother_dynamic_scanner", cartridges: "TN-3429 / TN-3449 / TN-3479"
                 }
             ],
             "Bodenor": [
@@ -123,74 +134,95 @@
             Check: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             WifiOff: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/></svg>,
             Refresh: ({spin}) => <svg className={spin ? "animate-spin" : ""} width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
-            Settings: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            Settings: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
             Box: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
             X: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-            Building: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21V12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v9"></path></svg>
+            Building: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21V12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v9"></path></svg>,
+            ExternalLink: () => <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         };
 
         const Parsers = {
-            brother_color_laser_robust: (html) => {
-                const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false }; // isMono false fuerza siempre los 4 colores
+            // --- PARSER RICOH MEJORADO ---
+            ricoh_generic: (html) => {
+                const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: true };
                 let status = 'online';
                 let message = 'Operativa';
                 
                 const text = html.toLowerCase();
-                if (text.includes("espera")) message = "En Espera";
-                if (text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
-                if (text.includes("error") || text.includes("atasco") || text.includes("cubierta")) { status = 'error'; message = "Atención Requerida"; }
-                if (text.includes("poca tinta") || text.includes("poco tóner") || text.includes("agotado")) { status = 'warning'; message = "Tóner Bajo/Agotado"; }
+                
+                // 1. Verificación exacta basada en tu captura de pantalla
+                if (text.includes("replace print cartridge soon") || text.includes("pronto") || text.includes("poco")) {
+                    status = 'warning'; 
+                    message = "Tóner Bajo";
+                } else if (text.includes("error") || text.includes("cover open") || text.includes("abierta")) {
+                    status = 'error'; 
+                    message = "Atención Requerida";
+                }
 
-                // Intento 1: Buscar alturas explícitamente por el nombre del color
-                const getHeight = (colorName) => {
-                    let regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
-                    let m = html.match(regex);
-                    if (!m) {
-                        regex = new RegExp(`src=[^>]*?${colorName}[^>]*?height=["']?(\\d+)["']?`, "i");
-                        m = html.match(regex);
-                    }
-                    return m ? parseInt(m[1]) : -1;
-                };
-
-                const hC = getHeight("Cyan");
-                const hM = getHeight("Magenta");
-                const hY = getHeight("Yellow");
-                let hBk = getHeight("Black");
-                if (hBk === -1) hBk = getHeight("Bk");
-
-                const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-
-                if (hC > -1 || hM > -1 || hY > -1 || hBk > -1) {
-                    ink.c = hC > -1 ? norm(hC) : 0;
-                    ink.m = hM > -1 ? norm(hM) : 0;
-                    ink.y = hY > -1 ? norm(hY) : 0;
-                    ink.bk = hBk > -1 ? norm(hBk) : 0;
+                // 2. Extraer el ancho de la barra gráfica (Suele ser de 160px = 100%)
+                let barMatch = html.match(/(?:print cartridge|cartucho)[\s\S]{0,300}?(?:<img|<td|<div)[^>]+width=["']?(\d+)["']?/i);
+                
+                if (barMatch) {
+                    let width = parseInt(barMatch[1]);
+                    // Fórmula para convertir ancho a porcentaje (máx 100%)
+                    ink.bk = Math.min(Math.round((width / 160) * 100), 100);
+                } else if (html.match(/width:\s*(\d+)%/i)) {
+                    // Si usa porcentaje CSS
+                    ink.bk = parseInt(html.match(/width:\s*(\d+)%/i)[1]);
                 } else {
-                    // Intento 2: Fallback (captura de barras puras, descartando íconos de error)
-                    const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
-                    const matches = [...html.matchAll(imgRegex)];
-                    const bars = matches.map(m => parseInt(m[1])).filter(h => h > 10 && h < 65); 
-                    
-                    if (bars.length >= 4) {
-                        ink.bk = norm(bars[0]);
-                        ink.c  = norm(bars[1]);
-                        ink.m  = norm(bars[2]);
-                        ink.y  = norm(bars[3]);
-                    } else {
-                        // Si falla o la impresora oculta las barras por un error, manda -1 para mostrar "--"
-                        ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1;
+                    ink.bk = -1; // Falló la lectura gráfica
+                }
+
+                // 3. RESCATE INTELIGENTE (LA CORRECCIÓN): 
+                // Si la barra no se pudo leer o dio 0, pero vimos el mensaje "Replace Soon", 
+                // forzamos el nivel a 5% para que la alerta visual de la barra funcione.
+                if (status === 'warning' && (ink.bk <= 0 || ink.bk === -2)) {
+                    ink.bk = 5; // Fuerza visualmente un 5% en la barra
+                }
+
+                // Mensaje si no leyó nada útil y no hay alertas
+                if (ink.bk === -1 && status === 'online') {
+                    if (!text.includes("cartridge") && !text.includes("status")) {
+                        message = "Lectura Bloqueada (Frame/URL)";
+                        ink.bk = -2; // Muestra "Ver en web"
                     }
                 }
+                
                 return { status, message, ink };
             },
 
-            // --- NUEVO: PISO 2 CD A (Corregido tras diagnóstico) ---
+            brother_color_laser_robust: (html) => {
+                const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
+                let status = 'online';
+                let message = 'Operativa';
+                
+                const text = html.toLowerCase();
+                if (text.includes("espera") || text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
+                if (text.includes("error") || text.includes("atasco") || text.includes("cubierta") || text.includes("reemplaz")) { 
+                    status = 'error'; 
+                    message = "Atención Requerida"; 
+                }
+
+                const getH = (colorName) => {
+                    const regex = new RegExp(`alt=["']?${colorName}["']?[^>]*height=["']?(\\d+)["']?`, 'i');
+                    const m = html.match(regex);
+                    return m ? Math.min(Math.round((parseInt(m[1]) / 56) * 100), 100) : -1;
+                };
+
+                ink.c = getH('cyan');
+                ink.m = getH('magenta');
+                ink.y = getH('yellow');
+                ink.bk = getH('black');
+
+                return { status, message, ink };
+            },
+
+            // --- PISO 2 CD A ---
             brother_inktank_specific: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
                 let status = 'online';
                 let message = 'Operativa';
                 
-                // Función auxiliar que busca específicamente el nombre del color en el atributo ALT
                 const getHeight = (colorName) => {
                     const regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
                     const match = html.match(regex);
@@ -202,7 +234,6 @@
                 const hY = getHeight("Yellow");
                 const hBk = getHeight("Black");
 
-                // Validación simple: Si todo es 0, algo falló
                 if (hM === 0 && hC === 0 && hY === 0 && hBk === 0) {
                     const imgRegex = /height=["']?(\d+)["']?/gi;
                     const matches = [...html.matchAll(imgRegex)];
@@ -275,7 +306,6 @@
                 return { status, message, ink };
             },
 
-            // --- RESTO DE PARSERS ---
             brother_ink_pages_v2: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
                 let status = 'online';
@@ -385,20 +415,30 @@
             }
         };
 
-        function InkBar({ label, color, value, stock }) {
+        function InkBar({ label, color, value, stock, printerUrl }) {
+            const isBlocked = value === -2;
             const isError = value === -1;
-            const percentage = isError ? 0 : value;
+            
             const currentStock = stock || 0;
             const stockPercent = Math.min((currentStock / MAX_STOCK_GOAL) * 100, 100);
+            
             return (
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-5 text-[10px] font-bold text-slate-500">{label}</div>
                     <div className="flex-grow h-3.5 bg-slate-100 rounded-md overflow-hidden relative border border-slate-200 shadow-inner group">
-                        <div className={`h-full transition-all duration-1000 ${color} ${isError ? 'opacity-0' : 'opacity-100'}`} style={{ width: `${percentage}%` }}></div>
+                        {!isBlocked && !isError && (
+                            <div className={`h-full transition-all duration-1000 ${value <= 10 ? 'bg-yellow-400' : color}`} style={{ width: `${value}%` }}></div>
+                        )}
                         <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-600 drop-shadow-sm group-hover:hidden">
-                            {isError ? '--' : `${percentage}%`}
+                            {isBlocked ? (
+                                <a href={printerUrl} target="_blank" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 underline">
+                                    Ver en Web <Icons.ExternalLink />
+                                </a>
+                            ) : isError ? '--' : `${value}%`}
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-slate-500 hidden group-hover:flex bg-white/90">EN USO</div>
+                        {!isBlocked && (
+                            <div className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-slate-500 hidden group-hover:flex bg-white/90">EN USO</div>
+                        )}
                     </div>
                     <div className="w-12 h-3.5 bg-slate-50 rounded-md overflow-hidden relative border border-slate-200" title={`Stock: ${currentStock}/${MAX_STOCK_GOAL}`}>
                         <div className={`h-full transition-all duration-1000 ${currentStock > 0 ? 'bg-emerald-400' : 'bg-red-100'}`} style={{ width: `${stockPercent}%` }}></div>
@@ -410,8 +450,9 @@
 
         function StockModal({ printer, stock, onClose, onSave }) {
             const [tempStock, setTempStock] = useState(stock);
-            const isMono = printer.type && printer.type.includes('dynamic') && printer.ink && printer.ink.isMono;
-            const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650') || printer.model.includes('M1212nf'));
+            const isMono = (printer.type && printer.type.includes('dynamic') && printer.ink && printer.ink.isMono) || 
+                           (printer.type === 'ricoh_generic');
+            const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650') || printer.model.includes('M1212nf') || printer.model.includes('L6900DW') || printer.model.includes('3710DN'));
 
             const handleChange = (color, value) => {
                 setTempStock(prev => ({ ...prev, [color]: parseInt(value) || 0 }));
@@ -486,12 +527,42 @@
                 setLastUpdate(now);
                 const promises = currentList.map(async (p) => {
                     try {
-                        const controller = new AbortController();
-                        const id = setTimeout(() => controller.abort(), 10000);
-                        const res = await fetch(p.url, { signal: controller.signal, cache: "no-store", mode: 'cors', credentials: 'omit', referrerPolicy: "no-referrer" });
-                        clearTimeout(id);
-                        if (!res.ok) throw new Error("Error HTTP");
-                        const html = await res.text();
+                        const fetchWithTimeout = async (urlToFetch) => {
+                            const controller = new AbortController();
+                            const id = setTimeout(() => controller.abort(), 10000);
+                            // Relaxing CORS restrictions specifically to allow legacy printers to respond
+                            const res = await fetch(urlToFetch, { signal: controller.signal, cache: "no-store", credentials: 'omit' });
+                            clearTimeout(id);
+                            if (!res.ok) throw new Error("Error HTTP");
+                            return await res.text();
+                        };
+
+                        let html;
+                        try {
+                            html = await fetchWithTimeout(p.url);
+                        } catch (e) {
+                            if(p.fallbackUrl) {
+                                html = await fetchWithTimeout(p.fallbackUrl);
+                            } else {
+                                throw e;
+                            }
+                        } // <-- ESTA ES LA LLAVE QUE FALTABA
+
+                        // NUEVO: AUTO-EXTRACTOR DE FRAMES PARA IMPRESORAS ANTIGUAS (RICOH)
+                        if (html && (html.toLowerCase().includes('<frame') || html.toLowerCase().includes('<iframe'))) {
+                            const frameMatch = html.match(/<frame[^>]+src=["']([^"']+)["']/i) || html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+                            if (frameMatch && !frameMatch[1].startsWith('javascript:')) {
+                                const framePath = frameMatch[1];
+                                const baseIp = p.url.split('/').slice(0,3).join('/'); // Obtiene http://10.1.104.110
+                                const frameUrl = framePath.startsWith('http') ? framePath : `${baseIp}/${framePath.replace(/^\//, '')}`;
+                                try {
+                                    const frameHtml = await fetchWithTimeout(frameUrl);
+                                    html += "\n" + frameHtml; 
+                                } catch (e) {
+                                    // Ignorar error si no puede sacar el frame
+                                }
+                            }
+                        }
                         
                         let parserFunc = Parsers.brother_dynamic_scanner; // Default safe
                         if (p.type && Parsers[p.type]) parserFunc = Parsers[p.type];
@@ -527,14 +598,18 @@
                                     <button key={office} onClick={() => setCurrentOffice(office)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${currentOffice === office ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{office}</button>
                                 ))}
                             </div>
-                            <button onClick={() => updatePrinters(printers)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-all active:scale-95 shadow-lg shadow-blue-200 text-sm"><Icons.Refresh /></button>
+                            <button onClick={() => updatePrinters(printers)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-all active:scale-95 shadow-lg shadow-blue-200 text-sm"><Icons.Refresh spin={printers.some(p => p.status === 'loading')} /></button>
                         </div>
                     </header>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {printers.map(p => {
                             const currentStock = printerStock[p.id] || { bk: 0, c: 0, m: 0, y: 0 };
-                            const showOnlyBlack = p.ink.isMono === true || (p.model && p.model.includes('M1212nf'));
+                            // Filtro visual automático para impresoras Blanco y Negro
+                            const showOnlyBlack = (p.ink && p.ink.isMono === true) || 
+                                                  (p.model && p.model.includes('M1212nf')) || 
+                                                  (p.type === 'ricoh_generic');
+                                                  
                             return (
                                 <div key={p.id} className={`printer-card bg-white rounded-2xl border-l-[6px] p-6 flex flex-col justify-between ${p.status === 'online' ? 'border-green-500 shadow-sm' : p.status === 'warning' ? 'border-yellow-400 shadow-md ring-1 ring-yellow-100' : p.status === 'error' ? 'border-red-500 shadow-md ring-1 ring-red-100' : 'border-slate-300 opacity-80'}`}>
                                     <div>
@@ -550,12 +625,12 @@
                                             <div className="flex justify-between items-end mb-2"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Niveles & Stock</span></div>
                                             {p.status !== 'offline' ? (
                                                 <div className="space-y-1">
-                                                    <InkBar label="BK" color="bg-slate-800" value={p.ink.bk} stock={currentStock.bk} />
+                                                    <InkBar label="BK" color="bg-slate-800" value={p.ink.bk} stock={currentStock.bk} printerUrl={p.adminUrl || p.url} />
                                                     {!showOnlyBlack && (
                                                         <>
-                                                            <InkBar label="C" color="bg-cyan-500" value={p.ink.c} stock={currentStock.c} />
-                                                            <InkBar label="M" color="bg-pink-500" value={p.ink.m} stock={currentStock.m} />
-                                                            <InkBar label="Y" color="bg-yellow-400" value={p.ink.y} stock={currentStock.y} />
+                                                            <InkBar label="C" color="bg-cyan-500" value={p.ink.c} stock={currentStock.c} printerUrl={p.adminUrl || p.url} />
+                                                            <InkBar label="M" color="bg-pink-500" value={p.ink.m} stock={currentStock.m} printerUrl={p.adminUrl || p.url} />
+                                                            <InkBar label="Y" color="bg-yellow-400" value={p.ink.y} stock={currentStock.y} printerUrl={p.adminUrl || p.url} />
                                                         </>
                                                     )}
                                                 </div>
