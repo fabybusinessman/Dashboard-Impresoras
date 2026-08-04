@@ -21,10 +21,9 @@
 <body>
     <div id="root"></div>
 
-<script type="text/babel" data-type="module">
+    <script type="text/babel" data-type="module">
         const { useState, useEffect } = React;
 
-        // --- BASE DE DATOS DE IMPRESORAS ---
         const PRINTERS_DB = {
             "Bicentenario": [
                 { 
@@ -37,11 +36,6 @@
                     url: "http://10.1.104.119/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.104.119/", 
                     type: "hp_xml_verified", cartridges: "HP 974A (Estándar) / HP 974X (Alta Capacidad)"
                 }, 
-                { 
-                    id: 3, name: "Impresora B2B", model: "HP LaserJet M1212nf MFP", 
-                    url: "http://10.1.4.89/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.4.89/",
-                    type: "hp_xml_verified", cartridges: "Tóner: CE285A (85A)"
-                },
                 { 
                     id: 4, name: "Impresora Don Rodrigo", model: "Brother DCP-L3551CDW", 
                     url: "http://10.1.104.135/general/status.html", adminUrl: "http://10.1.104.135/",
@@ -69,14 +63,18 @@
                 },
                 {
                     id: 9, name: "Impresora Ricoh RRHH", model: "Ricoh SP 3710DN",
-                    // URL ajustada basada en la captura para comprobar si está online
                     url: "http://10.1.104.110/main.asp?Lang=en-us", adminUrl: "http://10.1.104.110/main.asp?Lang=en-us", fallbackUrl: "http://10.1.104.110/",
                     type: "ricoh_generic", cartridges: "SP 3710X (Negro)"
                 },
                 {
-                    id: 10, name: "Impresora Brother RRHH", model: "Brother MFC-L6900DW", 
+                    id: 10, name: "Impresora Brother RRHH", model: "Brother DCP-L2540DW", 
                     url: "http://10.1.104.79/general/status.html", adminUrl: "http://10.1.104.79/",
-                    type: "brother_dynamic_scanner", cartridges: "TN-3429 / TN-3449 / TN-3479"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-2370 / TN-2340 / TN-660"
+                },
+                { 
+                    id: 3, name: "Impresora B2B", model: "HP LaserJet M1212nf MFP", 
+                    url: "http://10.1.4.89/DevMgmt/ConsumableConfigDyn.xml", fallbackUrl: "http://10.1.4.89/",
+                    type: "hp_xml_verified", cartridges: "Tóner: CE285A (85A)"
                 }
             ],
             "Bodenor": [
@@ -88,40 +86,34 @@
                 },
                 {
                     id: 101, name: "Piso 2 CD A", model: "Brother MFC-T925DW", 
-                    url: "http://10.1.145.148/home/status.html", 
-                    adminUrl: "http://10.1.145.148/",
+                    url: "http://10.1.145.148/home/status.html", adminUrl: "http://10.1.145.148/",
                     type: "brother_inktank_specific", 
                     cartridges: "Botellas: BTD60BK / BT5001 (C/M/Y)"
                 },
                 {
                     id: 107, name: "Piso 2 CD B", model: "Brother DCP-1610NW", 
                     url: "http://10.1.145.200/general/status.html", adminUrl: "http://10.1.145.200/",
-                    type: "brother_dynamic_scanner",
-                    cartridges: "Tóner: TN-1060"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-1060"
                 },
                 {
                     id: 106, name: "Piso 2 Adm", model: "Brother DCP-L2540DW", 
                     url: "http://10.1.46.4/general/status.html", adminUrl: "http://10.1.46.4/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-2370"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-2370"
                 },
                 {
                     id: 104, name: "Recepción", model: "Brother DCP-1610NW", 
                     url: "http://10.1.145.155/general/status.html", adminUrl: "http://10.1.145.155/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-1060"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-1060"
                 },
                 {
                     id: 102, name: "Transporte", model: "Brother DCP-1610NW", 
                     url: "http://10.1.145.162/general/status.html", adminUrl: "http://10.1.145.162/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-1060"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-1060"
                 },
                 {
                     id: 103, name: "Logística Inversa", model: "Brother DCP-L5650DN", 
                     url: "http://10.1.46.9/general/status.html", adminUrl: "http://10.1.46.9/",
-                    type: "brother_dynamic_scanner", 
-                    cartridges: "Tóner: TN-3429 / TN-3449 / TN-3479"
+                    type: "brother_dynamic_scanner", cartridges: "Tóner: TN-3429 / TN-3449 / TN-3479"
                 }
             ]
         };
@@ -142,52 +134,39 @@
         };
 
         const Parsers = {
-            // --- PARSER RICOH MEJORADO ---
             ricoh_generic: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: true };
                 let status = 'online';
                 let message = 'Operativa';
-                
                 const text = html.toLowerCase();
                 
-                // 1. Verificación exacta basada en tu captura de pantalla
                 if (text.includes("replace print cartridge soon") || text.includes("pronto") || text.includes("poco")) {
-                    status = 'warning'; 
-                    message = "Tóner Bajo";
+                    status = 'warning'; message = "Tóner Bajo";
                 } else if (text.includes("error") || text.includes("cover open") || text.includes("abierta")) {
-                    status = 'error'; 
-                    message = "Atención Requerida";
+                    status = 'error'; message = "Atención Requerida";
                 }
 
-                // 2. Extraer el ancho de la barra gráfica (Suele ser de 160px = 100%)
                 let barMatch = html.match(/(?:print cartridge|cartucho)[\s\S]{0,300}?(?:<img|<td|<div)[^>]+width=["']?(\d+)["']?/i);
                 
                 if (barMatch) {
                     let width = parseInt(barMatch[1]);
-                    // Fórmula para convertir ancho a porcentaje (máx 100%)
                     ink.bk = Math.min(Math.round((width / 160) * 100), 100);
                 } else if (html.match(/width:\s*(\d+)%/i)) {
-                    // Si usa porcentaje CSS
                     ink.bk = parseInt(html.match(/width:\s*(\d+)%/i)[1]);
                 } else {
-                    ink.bk = -1; // Falló la lectura gráfica
+                    ink.bk = -1;
                 }
 
-                // 3. RESCATE INTELIGENTE (LA CORRECCIÓN): 
-                // Si la barra no se pudo leer o dio 0, pero vimos el mensaje "Replace Soon", 
-                // forzamos el nivel a 5% para que la alerta visual de la barra funcione.
                 if (status === 'warning' && (ink.bk <= 0 || ink.bk === -2)) {
-                    ink.bk = 5; // Fuerza visualmente un 5% en la barra
+                    ink.bk = 5; 
                 }
 
-                // Mensaje si no leyó nada útil y no hay alertas
                 if (ink.bk === -1 && status === 'online') {
                     if (!text.includes("cartridge") && !text.includes("status")) {
                         message = "Lectura Bloqueada (Frame/URL)";
-                        ink.bk = -2; // Muestra "Ver en web"
+                        ink.bk = -2;
                     }
                 }
-                
                 return { status, message, ink };
             },
 
@@ -195,121 +174,76 @@
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
                 let status = 'online';
                 let message = 'Operativa';
-                
                 const text = html.toLowerCase();
                 if (text.includes("espera") || text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
                 if (text.includes("error") || text.includes("atasco") || text.includes("cubierta") || text.includes("reemplaz")) { 
-                    status = 'error'; 
-                    message = "Atención Requerida"; 
+                    status = 'error'; message = "Atención Requerida"; 
                 }
-
                 const getH = (colorName) => {
                     const regex = new RegExp(`alt=["']?${colorName}["']?[^>]*height=["']?(\\d+)["']?`, 'i');
                     const m = html.match(regex);
                     return m ? Math.min(Math.round((parseInt(m[1]) / 56) * 100), 100) : -1;
                 };
-
-                ink.c = getH('cyan');
-                ink.m = getH('magenta');
-                ink.y = getH('yellow');
-                ink.bk = getH('black');
-
+                ink.c = getH('cyan'); ink.m = getH('magenta'); ink.y = getH('yellow'); ink.bk = getH('black');
                 return { status, message, ink };
             },
 
-            // --- PISO 2 CD A ---
             brother_inktank_specific: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online';
-                let message = 'Operativa';
-                
+                let status = 'online'; let message = 'Operativa';
                 const getHeight = (colorName) => {
                     const regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
-                    const match = html.match(regex);
-                    return match ? parseInt(match[1]) : 0;
+                    const match = html.match(regex); return match ? parseInt(match[1]) : 0;
                 };
-
-                const hM = getHeight("Magenta");
-                const hC = getHeight("Cyan");
-                const hY = getHeight("Yellow");
-                const hBk = getHeight("Black");
+                const hM = getHeight("Magenta"); const hC = getHeight("Cyan"); const hY = getHeight("Yellow"); const hBk = getHeight("Black");
 
                 if (hM === 0 && hC === 0 && hY === 0 && hBk === 0) {
                     const imgRegex = /height=["']?(\d+)["']?/gi;
                     const matches = [...html.matchAll(imgRegex)];
                     const bars = matches.map(m => parseInt(m[1])).filter(h => h > 10 && h < 100);
-                    
                     if (bars.length >= 4) {
                         const norm = (val) => Math.min(Math.round((val / 56) * 100), 100);
-                        ink.m = norm(bars[0]);
-                        ink.c = norm(bars[1]);
-                        ink.y = norm(bars[2]);
-                        ink.bk = norm(bars[3]);
-                    } else {
-                        status = 'error';
-                        message = 'Lectura fallida';
-                        ink.bk = -1;
-                    }
+                        ink.m = norm(bars[0]); ink.c = norm(bars[1]); ink.y = norm(bars[2]); ink.bk = norm(bars[3]);
+                    } else { status = 'error'; message = 'Lectura fallida'; ink.bk = -1; }
                 } else {
                     const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                    ink.m = norm(hM);
-                    ink.c = norm(hC);
-                    ink.y = norm(hY);
-                    ink.bk = norm(hBk);
+                    ink.m = norm(hM); ink.c = norm(hC); ink.y = norm(hY); ink.bk = norm(hBk);
                 }
-                
                 return { status, message, ink };
             },
 
-            // --- RRHH (Laser BK-C-M-Y Forzado) ---
             brother_laser_bk_c_m_y_forced: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online';
-                let message = 'Operativa';
-                
+                let status = 'online'; let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("cambie") || text.includes("reemplaz") || text.includes("gotado") || text.includes("fin vida")) { 
-                    status = 'error'; 
-                    message = "Cambiar Tóner/Insumo"; 
+                    status = 'error'; message = "Cambiar Tóner/Insumo"; 
                 }
-
                 const getH = (colorName) => {
                     const regex = new RegExp(`src=['"][^'"]*?(${colorName})[^'"]*?['"][^>]*?height=['"]?(\\d+)`, 'i');
                     const m = html.match(regex);
                     return m ? Math.min(Math.round((parseInt(m[2]) / 56) * 100), 100) : -1;
                 };
-
                 let bkVal = getH('black') > -1 ? getH('black') : getH('bk');
-                let cVal = getH('cyan');
-                let mVal = getH('magenta');
-                let yVal = getH('yellow');
+                let cVal = getH('cyan'); let mVal = getH('magenta'); let yVal = getH('yellow');
 
                 if (bkVal === -1 && cVal === -1) {
                     const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
                     const matches = [...html.matchAll(imgRegex)];
                     const bars = matches.map(m => parseInt(m[1])).filter(h => h >= 0 && h < 100);
-
                     if (bars.length >= 3) { 
                         const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                        ink.bk = norm(bars[0] || 0);
-                        ink.c = norm(bars[1] || 0);
-                        ink.m = norm(bars[2] || 0);
-                        ink.y = norm(bars[3] || 0);
+                        ink.bk = norm(bars[0] || 0); ink.c = norm(bars[1] || 0); ink.m = norm(bars[2] || 0); ink.y = norm(bars[3] || 0);
                     }
                 } else {
-                    ink.bk = bkVal === -1 ? 0 : bkVal;
-                    ink.c = cVal === -1 ? 0 : cVal;
-                    ink.m = mVal === -1 ? 0 : mVal;
-                    ink.y = yVal === -1 ? 0 : yVal;
+                    ink.bk = bkVal === -1 ? 0 : bkVal; ink.c = cVal === -1 ? 0 : cVal; ink.m = mVal === -1 ? 0 : mVal; ink.y = yVal === -1 ? 0 : yVal;
                 }
-
                 return { status, message, ink };
             },
 
             brother_ink_pages_v2: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online';
-                let message = 'Operativa';
+                let status = 'online'; let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("poca tinta") || text.includes("agotado")) { status = 'warning'; message = "Poca Tinta"; }
                 const startIdx = text.indexOf("rend");
@@ -318,20 +252,16 @@
                     const matches = chunk.match(/(\d{3,5})/g);
                     if (matches && matches.length >= 4) {
                         const calc = (val, max) => Math.min(Math.round((parseInt(val) / max) * 100), 100);
-                        ink.m = calc(matches[0], 5000);
-                        ink.c = calc(matches[1], 5000);
-                        ink.y = calc(matches[2], 5000);
-                        ink.bk = calc(matches[3], 6000); 
+                        ink.m = calc(matches[0], 5000); ink.c = calc(matches[1], 5000); ink.y = calc(matches[2], 5000); ink.bk = calc(matches[3], 6000); 
                         if (ink.m < 15 || ink.c < 15 || ink.y < 15 || ink.bk < 10) { status = 'warning'; message = "Poca Tinta Detectada"; }
                     } else { ink.bk = -1; }
                 } else { ink.bk = -1; }
                 return { status, message, ink };
             },
+
             hp_xml_verified: (text) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online';
-                let message = 'Operativa';
-                let foundAny = false;
+                let status = 'online'; let message = 'Operativa'; let foundAny = false;
                 const chunks = text.split("ConsumableLabelCode");
                 chunks.forEach(chunk => {
                     const colorMatch = chunk.match(/>([KCMY]|Black|Cyan|Magenta|Yellow)</i);
@@ -339,8 +269,7 @@
                         const code = colorMatch[1].toUpperCase();
                         const valMatch = chunk.match(/PercentageLevelRemaining[^>]*>(\d+)/i);
                         if (valMatch) {
-                            const val = parseInt(valMatch[1]);
-                            foundAny = true;
+                            const val = parseInt(valMatch[1]); foundAny = true;
                             if (code === 'K' || code === 'BLACK') ink.bk = val;
                             else if (code === 'C' || code === 'CYAN') ink.c = val;
                             else if (code === 'M' || code === 'MAGENTA') ink.m = val;
@@ -351,10 +280,10 @@
                 if (!foundAny) { ink.bk = -1; message = "XML ilegible"; status = 'error'; }
                 return { status, message, ink };
             },
+
             brother_laser_universal: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online';
-                let message = 'Operativa';
+                let status = 'online'; let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("espera")) message = "En Espera";
                 if (text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
@@ -364,37 +293,30 @@
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 5 && h < 70); 
                 const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
                 if (bars.length >= 4) {
-                    ink.bk = norm(bars[0]);
-                    ink.c  = norm(bars[1]);
-                    ink.m  = norm(bars[2]);
-                    ink.y  = norm(bars[3]);
+                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
                 } else if (bars.length >= 1) {
-                    ink.bk = norm(bars[0]);
-                    ink.isMono = true; 
+                    ink.bk = norm(bars[0]); ink.isMono = true; 
                 } else { ink.bk = -1; }
                 return { status, message, ink };
             },
+
             brother_marketing_sensitive: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online';
-                let message = 'Operativa';
+                let status = 'online'; let message = 'Operativa';
                 const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
                 const matches = [...html.matchAll(imgRegex)];
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 2 && h < 65); 
                 if (bars.length >= 4) {
                     const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                    ink.bk = norm(bars[0]);
-                    ink.c  = norm(bars[1]);
-                    ink.m  = norm(bars[2]);
-                    ink.y  = norm(bars[3]);
+                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
                     if (ink.bk < 10 || ink.c < 10 || ink.m < 10 || ink.y < 10) { message = "Nivel Crítico"; status = 'warning'; }
                 } else { ink.bk = -1; }
                 return { status, message, ink };
             },
+
             brother_dynamic_scanner: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online';
-                let message = 'Operativa';
+                let status = 'online'; let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("espera")) message = "En Espera";
                 if (text.includes("error")) { status = 'error'; message = "Atención Requerida"; }
@@ -403,13 +325,9 @@
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 2 && h < 120);
                 const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
                 if (bars.length >= 4) {
-                    ink.bk = norm(bars[0]);
-                    ink.c  = norm(bars[1]);
-                    ink.m  = norm(bars[2]);
-                    ink.y  = norm(bars[3]);
+                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
                 } else if (bars.length >= 1) {
-                    ink.bk = norm(bars[0]);
-                    ink.isMono = true; 
+                    ink.bk = norm(bars[0]); ink.isMono = true; 
                 } else { ink.bk = -1; }
                 return { status, message, ink };
             }
@@ -418,7 +336,6 @@
         function InkBar({ label, color, value, stock, printerUrl }) {
             const isBlocked = value === -2;
             const isError = value === -1;
-            
             const currentStock = stock || 0;
             const stockPercent = Math.min((currentStock / MAX_STOCK_GOAL) * 100, 100);
             
@@ -427,7 +344,8 @@
                     <div className="w-5 text-[10px] font-bold text-slate-500">{label}</div>
                     <div className="flex-grow h-3.5 bg-slate-100 rounded-md overflow-hidden relative border border-slate-200 shadow-inner group">
                         {!isBlocked && !isError && (
-                            <div className={`h-full transition-all duration-1000 ${value <= 10 ? 'bg-yellow-400' : color}`} style={{ width: `${value}%` }}></div>
+                            // Mantiene el color original pase lo que pase
+                            <div className={`h-full transition-all duration-1000 ${color}`} style={{ width: `${value}%` }}></div>
                         )}
                         <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-600 drop-shadow-sm group-hover:hidden">
                             {isBlocked ? (
@@ -450,6 +368,7 @@
 
         function StockModal({ printer, stock, onClose, onSave }) {
             const [tempStock, setTempStock] = useState(stock);
+            // Aseguramos que la Brother L2540DW y la M1212nf siempre se consideren monocromáticas en el modal
             const isMono = (printer.type && printer.type.includes('dynamic') && printer.ink && printer.ink.isMono) || 
                            (printer.type === 'ricoh_generic');
             const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650') || printer.model.includes('M1212nf') || printer.model.includes('L6900DW') || printer.model.includes('3710DN'));
@@ -530,7 +449,6 @@
                         const fetchWithTimeout = async (urlToFetch) => {
                             const controller = new AbortController();
                             const id = setTimeout(() => controller.abort(), 10000);
-                            // Relaxing CORS restrictions specifically to allow legacy printers to respond
                             const res = await fetch(urlToFetch, { signal: controller.signal, cache: "no-store", credentials: 'omit' });
                             clearTimeout(id);
                             if (!res.ok) throw new Error("Error HTTP");
@@ -541,33 +459,47 @@
                         try {
                             html = await fetchWithTimeout(p.url);
                         } catch (e) {
-                            if(p.fallbackUrl) {
+                            if (p.fallbackUrl) {
                                 html = await fetchWithTimeout(p.fallbackUrl);
                             } else {
                                 throw e;
                             }
-                        } // <-- ESTA ES LA LLAVE QUE FALTABA
+                        }
 
-                        // NUEVO: AUTO-EXTRACTOR DE FRAMES PARA IMPRESORAS ANTIGUAS (RICOH)
                         if (html && (html.toLowerCase().includes('<frame') || html.toLowerCase().includes('<iframe'))) {
                             const frameMatch = html.match(/<frame[^>]+src=["']([^"']+)["']/i) || html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
                             if (frameMatch && !frameMatch[1].startsWith('javascript:')) {
                                 const framePath = frameMatch[1];
-                                const baseIp = p.url.split('/').slice(0,3).join('/'); // Obtiene http://10.1.104.110
+                                const baseIp = p.url.split('/').slice(0,3).join('/'); 
                                 const frameUrl = framePath.startsWith('http') ? framePath : `${baseIp}/${framePath.replace(/^\//, '')}`;
                                 try {
                                     const frameHtml = await fetchWithTimeout(frameUrl);
                                     html += "\n" + frameHtml; 
-                                } catch (e) {
-                                    // Ignorar error si no puede sacar el frame
-                                }
+                                } catch (e) {}
                             }
                         }
                         
-                        let parserFunc = Parsers.brother_dynamic_scanner; // Default safe
+                        let parserFunc = Parsers.brother_dynamic_scanner;
                         if (p.type && Parsers[p.type]) parserFunc = Parsers[p.type];
                         
                         const data = parserFunc(html);
+                        
+                        // ALERTA GLOBAL: Verifica si hay algún color en 0% para forzar mensaje de Cambio de Tóner
+                        if (data.status !== 'error' && data.ink) {
+                            const isMonochrome = data.ink.isMono === true || 
+                                                 (p.model && p.model.includes('M1212nf')) || 
+                                                 (p.type === 'ricoh_generic') ||
+                                                 (p.model && p.model.includes('L2540DW'));
+                                                 
+                            const isBlackEmpty = data.ink.bk === 0;
+                            const isColorEmpty = !isMonochrome && (data.ink.c === 0 || data.ink.m === 0 || data.ink.y === 0);
+
+                            if (isBlackEmpty || isColorEmpty) {
+                                data.status = 'warning';
+                                data.message = 'Cambio de Tóner';
+                            }
+                        }
+
                         return { ...p, ...data };
                     } catch (err) {
                         return { ...p, status: 'offline', message: 'Sin conexión', ink: {bk:-1, c:-1, m:-1, y:-1} };
@@ -605,10 +537,11 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {printers.map(p => {
                             const currentStock = printerStock[p.id] || { bk: 0, c: 0, m: 0, y: 0 };
-                            // Filtro visual automático para impresoras Blanco y Negro
+                            // Filtro visual para impresoras Blanco y Negro en el dashboard
                             const showOnlyBlack = (p.ink && p.ink.isMono === true) || 
                                                   (p.model && p.model.includes('M1212nf')) || 
-                                                  (p.type === 'ricoh_generic');
+                                                  (p.type === 'ricoh_generic') ||
+                                                  (p.model && p.model.includes('L2540DW'));
                                                   
                             return (
                                 <div key={p.id} className={`printer-card bg-white rounded-2xl border-l-[6px] p-6 flex flex-col justify-between ${p.status === 'online' ? 'border-green-500 shadow-sm' : p.status === 'warning' ? 'border-yellow-400 shadow-md ring-1 ring-yellow-100' : p.status === 'error' ? 'border-red-500 shadow-md ring-1 ring-red-100' : 'border-slate-300 opacity-80'}`}>
