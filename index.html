@@ -24,6 +24,7 @@
     <script type="text/babel" data-type="module">
         const { useState, useEffect } = React;
 
+        // --- BASE DE DATOS DE IMPRESORAS ---
         const PRINTERS_DB = {
             "Bicentenario": [
                 { 
@@ -47,9 +48,15 @@
                     type: "brother_marketing_sensitive", cartridges: "TN-221 (Estándar) / TN-225 (Alta Capacidad)"
                 },
                 { 
-                    id: 6, name: "Impresora Comercial", model: "Brother MFC-L8900CDW", 
+                    id: 6, name: "Impresora Comercial Brother", model: "Brother MFC-L8900CDW", 
                     url: "http://10.1.104.84/general/status.html", adminUrl: "http://10.1.104.84/",
                     type: "brother_laser_universal", cartridges: "TN-413 (Alta) / TN-419 (Súper Alta)" 
+                },
+                {
+                    id: 11, name: "Impresora Comercial Canon", model: "Canon Pixma G610",
+                    // La Canon ahora apunta directo al archivo JavaScript que tiene los datos
+                    url: "http://10.1.104.142/JS_MDL/model.js", adminUrl: "http://10.1.104.142/",
+                    type: "canon_6colors", cartridges: "Botellas: GI-13 (GY, BK, R, C, M, Y)"
                 },
                 {
                     id: 7, name: "Impresora Brother Piso 4", model: "Brother DCP-L3551CDW", 
@@ -68,7 +75,7 @@
                 },
                 {
                     id: 10, name: "Impresora Brother RRHH", model: "Brother DCP-L2540DW", 
-                    url: "http://10.1.104.79/general/status.html", adminUrl: "http://10.1.104.79/",
+                    url: "http://10.1.104.76/general/status.html", adminUrl: "http://10.1.104.76/",
                     type: "brother_dynamic_scanner", cartridges: "Tóner: TN-2370 / TN-2340 / TN-660"
                 },
                 { 
@@ -134,16 +141,59 @@
         };
 
         const Parsers = {
+            // --- PARSER DEFINITIVO CANON G610 (6 COLORES) ---
+            canon_6colors: (jsText) => {
+                const ink = { gy: 0, bk: 0, r: 0, c: 0, m: 0, y: 0, isMono: false };
+                let status = 'online';
+                let message = 'Operativa';
+                
+                // Verificamos si logramos descargar el model.js
+                if (!jsText || !jsText.includes('inktank')) {
+                    return { status: 'error', message: 'Lectura Bloqueada (API)', ink: { gy: -1, bk: -1, r: -1, c: -1, m: -1, y: -1, isMono: false } };
+                }
+
+                // Escala exacta de la Canon: 1=100%, 2=75%, 3=50%, 4=20%, 0=0%
+                const levelToPct = (lvl) => {
+                    const l = parseInt(lvl);
+                    if (l === 1) return 100; // Lleno
+                    if (l === 2) return 75;  // Alto
+                    if (l === 3) return 50;  // Medio
+                    if (l === 4) return 20;  // Bajo
+                    if (l === 0) return 0;   // Vacío
+                    return -1;
+                };
+
+                // Función para extraer el valor con expresiones regulares
+                const getInk = (index) => {
+                    const regex = new RegExp(`inktank\\[${index}\\]=\\[\\d+,(\\d+),\\d+\\]`);
+                    const match = jsText.match(regex);
+                    return match ? levelToPct(match[1]) : -1;
+                };
+
+                // Asignamos el índice interno de Canon a su color real
+                ink.gy = getInk(0); // 0: Gris
+                ink.bk = getInk(1); // 1: Negro
+                ink.r  = getInk(2); // 2: Rojo
+                ink.c  = getInk(3); // 3: Cian
+                ink.m  = getInk(4); // 4: Magenta
+                ink.y  = getInk(5); // 5: Amarillo
+
+                return { status, message, ink };
+            },
+
             ricoh_generic: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: true };
                 let status = 'online';
                 let message = 'Operativa';
+                
                 const text = html.toLowerCase();
                 
                 if (text.includes("replace print cartridge soon") || text.includes("pronto") || text.includes("poco")) {
-                    status = 'warning'; message = "Tóner Bajo";
+                    status = 'warning'; 
+                    message = "Tóner Bajo";
                 } else if (text.includes("error") || text.includes("cover open") || text.includes("abierta")) {
-                    status = 'error'; message = "Atención Requerida";
+                    status = 'error'; 
+                    message = "Atención Requerida";
                 }
 
                 let barMatch = html.match(/(?:print cartridge|cartucho)[\s\S]{0,300}?(?:<img|<td|<div)[^>]+width=["']?(\d+)["']?/i);
@@ -164,9 +214,10 @@
                 if (ink.bk === -1 && status === 'online') {
                     if (!text.includes("cartridge") && !text.includes("status")) {
                         message = "Lectura Bloqueada (Frame/URL)";
-                        ink.bk = -2;
+                        ink.bk = -2; 
                     }
                 }
+                
                 return { status, message, ink };
             },
 
@@ -174,76 +225,119 @@
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
                 let status = 'online';
                 let message = 'Operativa';
+                
                 const text = html.toLowerCase();
                 if (text.includes("espera") || text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
                 if (text.includes("error") || text.includes("atasco") || text.includes("cubierta") || text.includes("reemplaz")) { 
-                    status = 'error'; message = "Atención Requerida"; 
+                    status = 'error'; 
+                    message = "Atención Requerida"; 
                 }
+
                 const getH = (colorName) => {
                     const regex = new RegExp(`alt=["']?${colorName}["']?[^>]*height=["']?(\\d+)["']?`, 'i');
                     const m = html.match(regex);
                     return m ? Math.min(Math.round((parseInt(m[1]) / 56) * 100), 100) : -1;
                 };
-                ink.c = getH('cyan'); ink.m = getH('magenta'); ink.y = getH('yellow'); ink.bk = getH('black');
+
+                ink.c = getH('cyan');
+                ink.m = getH('magenta');
+                ink.y = getH('yellow');
+                ink.bk = getH('black');
+
                 return { status, message, ink };
             },
 
             brother_inktank_specific: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
+                
                 const getHeight = (colorName) => {
                     const regex = new RegExp(`alt="${colorName}"[^>]*height=["']?(\\d+)["']?`, "i");
-                    const match = html.match(regex); return match ? parseInt(match[1]) : 0;
+                    const match = html.match(regex);
+                    return match ? parseInt(match[1]) : 0;
                 };
-                const hM = getHeight("Magenta"); const hC = getHeight("Cyan"); const hY = getHeight("Yellow"); const hBk = getHeight("Black");
+
+                const hM = getHeight("Magenta");
+                const hC = getHeight("Cyan");
+                const hY = getHeight("Yellow");
+                const hBk = getHeight("Black");
 
                 if (hM === 0 && hC === 0 && hY === 0 && hBk === 0) {
                     const imgRegex = /height=["']?(\d+)["']?/gi;
                     const matches = [...html.matchAll(imgRegex)];
                     const bars = matches.map(m => parseInt(m[1])).filter(h => h > 10 && h < 100);
+                    
                     if (bars.length >= 4) {
                         const norm = (val) => Math.min(Math.round((val / 56) * 100), 100);
-                        ink.m = norm(bars[0]); ink.c = norm(bars[1]); ink.y = norm(bars[2]); ink.bk = norm(bars[3]);
-                    } else { status = 'error'; message = 'Lectura fallida'; ink.bk = -1; }
+                        ink.m = norm(bars[0]);
+                        ink.c = norm(bars[1]);
+                        ink.y = norm(bars[2]);
+                        ink.bk = norm(bars[3]);
+                    } else {
+                        status = 'error';
+                        message = 'Lectura fallida';
+                        ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1;
+                    }
                 } else {
                     const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                    ink.m = norm(hM); ink.c = norm(hC); ink.y = norm(hY); ink.bk = norm(hBk);
+                    ink.m = norm(hM);
+                    ink.c = norm(hC);
+                    ink.y = norm(hY);
+                    ink.bk = norm(hBk);
                 }
                 return { status, message, ink };
             },
 
             brother_laser_bk_c_m_y_forced: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
+                
                 const text = html.toLowerCase();
                 if (text.includes("cambie") || text.includes("reemplaz") || text.includes("gotado") || text.includes("fin vida")) { 
-                    status = 'error'; message = "Cambiar Tóner/Insumo"; 
+                    status = 'error'; 
+                    message = "Cambiar Tóner/Insumo"; 
                 }
+
                 const getH = (colorName) => {
                     const regex = new RegExp(`src=['"][^'"]*?(${colorName})[^'"]*?['"][^>]*?height=['"]?(\\d+)`, 'i');
                     const m = html.match(regex);
                     return m ? Math.min(Math.round((parseInt(m[2]) / 56) * 100), 100) : -1;
                 };
+
                 let bkVal = getH('black') > -1 ? getH('black') : getH('bk');
-                let cVal = getH('cyan'); let mVal = getH('magenta'); let yVal = getH('yellow');
+                let cVal = getH('cyan');
+                let mVal = getH('magenta');
+                let yVal = getH('yellow');
 
                 if (bkVal === -1 && cVal === -1) {
                     const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
                     const matches = [...html.matchAll(imgRegex)];
                     const bars = matches.map(m => parseInt(m[1])).filter(h => h >= 0 && h < 100);
+
                     if (bars.length >= 3) { 
                         const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                        ink.bk = norm(bars[0] || 0); ink.c = norm(bars[1] || 0); ink.m = norm(bars[2] || 0); ink.y = norm(bars[3] || 0);
+                        ink.bk = norm(bars[0] || 0);
+                        ink.c = norm(bars[1] || 0);
+                        ink.m = norm(bars[2] || 0);
+                        ink.y = norm(bars[3] || 0);
+                    } else {
+                        ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1;
                     }
                 } else {
-                    ink.bk = bkVal === -1 ? 0 : bkVal; ink.c = cVal === -1 ? 0 : cVal; ink.m = mVal === -1 ? 0 : mVal; ink.y = yVal === -1 ? 0 : yVal;
+                    ink.bk = bkVal === -1 ? -1 : bkVal;
+                    ink.c = cVal === -1 ? -1 : cVal;
+                    ink.m = mVal === -1 ? -1 : mVal;
+                    ink.y = yVal === -1 ? -1 : yVal;
                 }
                 return { status, message, ink };
             },
 
             brother_ink_pages_v2: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("poca tinta") || text.includes("agotado")) { status = 'warning'; message = "Poca Tinta"; }
                 const startIdx = text.indexOf("rend");
@@ -252,16 +346,20 @@
                     const matches = chunk.match(/(\d{3,5})/g);
                     if (matches && matches.length >= 4) {
                         const calc = (val, max) => Math.min(Math.round((parseInt(val) / max) * 100), 100);
-                        ink.m = calc(matches[0], 5000); ink.c = calc(matches[1], 5000); ink.y = calc(matches[2], 5000); ink.bk = calc(matches[3], 6000); 
-                        if (ink.m < 15 || ink.c < 15 || ink.y < 15 || ink.bk < 10) { status = 'warning'; message = "Poca Tinta Detectada"; }
-                    } else { ink.bk = -1; }
-                } else { ink.bk = -1; }
+                        ink.m = calc(matches[0], 5000);
+                        ink.c = calc(matches[1], 5000);
+                        ink.y = calc(matches[2], 5000);
+                        ink.bk = calc(matches[3], 6000); 
+                    } else { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; }
+                } else { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; }
                 return { status, message, ink };
             },
 
             hp_xml_verified: (text) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online'; let message = 'Operativa'; let foundAny = false;
+                let status = 'online';
+                let message = 'Operativa';
+                let foundAny = false;
                 const chunks = text.split("ConsumableLabelCode");
                 chunks.forEach(chunk => {
                     const colorMatch = chunk.match(/>([KCMY]|Black|Cyan|Magenta|Yellow)</i);
@@ -269,7 +367,8 @@
                         const code = colorMatch[1].toUpperCase();
                         const valMatch = chunk.match(/PercentageLevelRemaining[^>]*>(\d+)/i);
                         if (valMatch) {
-                            const val = parseInt(valMatch[1]); foundAny = true;
+                            const val = parseInt(valMatch[1]);
+                            foundAny = true;
                             if (code === 'K' || code === 'BLACK') ink.bk = val;
                             else if (code === 'C' || code === 'CYAN') ink.c = val;
                             else if (code === 'M' || code === 'MAGENTA') ink.m = val;
@@ -277,13 +376,14 @@
                         }
                     }
                 });
-                if (!foundAny) { ink.bk = -1; message = "XML ilegible"; status = 'error'; }
+                if (!foundAny) { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; message = "XML ilegible"; status = 'error'; }
                 return { status, message, ink };
             },
 
             brother_laser_universal: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("espera")) message = "En Espera";
                 if (text.includes("reposo") || text.includes("sleep")) message = "En Reposo";
@@ -293,30 +393,38 @@
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 5 && h < 70); 
                 const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
                 if (bars.length >= 4) {
-                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
+                    ink.bk = norm(bars[0]);
+                    ink.c  = norm(bars[1]);
+                    ink.m  = norm(bars[2]);
+                    ink.y  = norm(bars[3]);
                 } else if (bars.length >= 1) {
-                    ink.bk = norm(bars[0]); ink.isMono = true; 
-                } else { ink.bk = -1; }
+                    ink.bk = norm(bars[0]);
+                    ink.isMono = true; 
+                } else { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; }
                 return { status, message, ink };
             },
 
             brother_marketing_sensitive: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0 };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
                 const imgRegex = /<img[^>]+height=["']?(\d+)["']?[^>]*>/gi;
                 const matches = [...html.matchAll(imgRegex)];
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 2 && h < 65); 
                 if (bars.length >= 4) {
                     const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
-                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
-                    if (ink.bk < 10 || ink.c < 10 || ink.m < 10 || ink.y < 10) { message = "Nivel Crítico"; status = 'warning'; }
-                } else { ink.bk = -1; }
+                    ink.bk = norm(bars[0]);
+                    ink.c  = norm(bars[1]);
+                    ink.m  = norm(bars[2]);
+                    ink.y  = norm(bars[3]);
+                } else { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; }
                 return { status, message, ink };
             },
 
             brother_dynamic_scanner: (html) => {
                 const ink = { bk: 0, c: 0, m: 0, y: 0, isMono: false };
-                let status = 'online'; let message = 'Operativa';
+                let status = 'online';
+                let message = 'Operativa';
                 const text = html.toLowerCase();
                 if (text.includes("espera")) message = "En Espera";
                 if (text.includes("error")) { status = 'error'; message = "Atención Requerida"; }
@@ -325,10 +433,14 @@
                 const bars = matches.map(m => parseInt(m[1])).filter(h => h > 2 && h < 120);
                 const norm = (px) => Math.min(Math.round((px / 56) * 100), 100);
                 if (bars.length >= 4) {
-                    ink.bk = norm(bars[0]); ink.c = norm(bars[1]); ink.m = norm(bars[2]); ink.y = norm(bars[3]);
+                    ink.bk = norm(bars[0]);
+                    ink.c  = norm(bars[1]);
+                    ink.m  = norm(bars[2]);
+                    ink.y  = norm(bars[3]);
                 } else if (bars.length >= 1) {
-                    ink.bk = norm(bars[0]); ink.isMono = true; 
-                } else { ink.bk = -1; }
+                    ink.bk = norm(bars[0]);
+                    ink.isMono = true; 
+                } else { ink.bk = -1; ink.c = -1; ink.m = -1; ink.y = -1; }
                 return { status, message, ink };
             }
         };
@@ -336,6 +448,7 @@
         function InkBar({ label, color, value, stock, printerUrl }) {
             const isBlocked = value === -2;
             const isError = value === -1;
+            
             const currentStock = stock || 0;
             const stockPercent = Math.min((currentStock / MAX_STOCK_GOAL) * 100, 100);
             
@@ -344,7 +457,6 @@
                     <div className="w-5 text-[10px] font-bold text-slate-500">{label}</div>
                     <div className="flex-grow h-3.5 bg-slate-100 rounded-md overflow-hidden relative border border-slate-200 shadow-inner group">
                         {!isBlocked && !isError && (
-                            // Mantiene el color original pase lo que pase
                             <div className={`h-full transition-all duration-1000 ${color}`} style={{ width: `${value}%` }}></div>
                         )}
                         <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-600 drop-shadow-sm group-hover:hidden">
@@ -368,10 +480,12 @@
 
         function StockModal({ printer, stock, onClose, onSave }) {
             const [tempStock, setTempStock] = useState(stock);
-            // Aseguramos que la Brother L2540DW y la M1212nf siempre se consideren monocromáticas en el modal
+            
             const isMono = (printer.type && printer.type.includes('dynamic') && printer.ink && printer.ink.isMono) || 
                            (printer.type === 'ricoh_generic');
             const safeMono = isMono || (printer.model.includes('DCP-1610') || printer.model.includes('DCP-L2540') || printer.model.includes('DCP-L5650') || printer.model.includes('M1212nf') || printer.model.includes('L6900DW') || printer.model.includes('3710DN'));
+            
+            const is6Color = printer.type === 'canon_6colors';
 
             const handleChange = (color, value) => {
                 setTempStock(prev => ({ ...prev, [color]: parseInt(value) || 0 }));
@@ -385,20 +499,39 @@
                         </div>
                         <div className="p-6">
                             <div className="mb-4 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800"><span className="font-bold block mb-1">Modelo Compatible:</span>{printer.cartridges}</div>
-                            <div className="grid grid-cols-2 gap-4">
+                            
+                            <div className={`grid gap-4 ${is6Color ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'}`}>
+                                {is6Color && (
+                                    <div className="flex flex-col">
+                                        <label className="text-xs font-bold text-slate-500 uppercase mb-1">Gris (GY)</label>
+                                        <div className="flex items-center">
+                                            <div className="w-3 h-8 rounded-l bg-slate-400"></div>
+                                            <input type="number" min="0" value={tempStock.gy || 0} onChange={(e) => handleChange('gy', e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="flex flex-col">
                                     <label className="text-xs font-bold text-slate-500 uppercase mb-1">Negro (BK)</label>
                                     <div className="flex items-center">
                                         <div className="w-3 h-8 rounded-l bg-slate-800"></div>
-                                        <input type="number" min="0" value={tempStock.bk} onChange={(e) => handleChange('bk', e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <input type="number" min="0" value={tempStock.bk || 0} onChange={(e) => handleChange('bk', e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                                     </div>
                                 </div>
+                                {is6Color && (
+                                    <div className="flex flex-col">
+                                        <label className="text-xs font-bold text-slate-500 uppercase mb-1">Rojo (R)</label>
+                                        <div className="flex items-center">
+                                            <div className="w-3 h-8 rounded-l bg-red-500"></div>
+                                            <input type="number" min="0" value={tempStock.r || 0} onChange={(e) => handleChange('r', e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                    </div>
+                                )}
                                 {!safeMono && ['c', 'm', 'y'].map(color => (
                                     <div key={color} className="flex flex-col">
                                         <label className="text-xs font-bold text-slate-500 uppercase mb-1">{color === 'c' ? 'Cian (C)' : color === 'm' ? 'Magenta (M)' : 'Amarillo (Y)'}</label>
                                         <div className="flex items-center">
                                             <div className={`w-3 h-8 rounded-l ${color === 'c' ? 'bg-cyan-500' : color === 'm' ? 'bg-pink-500' : 'bg-yellow-400'}`}></div>
-                                            <input type="number" min="0" value={tempStock[color]} onChange={(e) => handleChange(color, e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <input type="number" min="0" value={tempStock[color] || 0} onChange={(e) => handleChange(color, e.target.value)} className="w-full border-y border-r border-slate-200 rounded-r p-1 pl-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                                         </div>
                                     </div>
                                 ))}
@@ -425,7 +558,7 @@
 
             useEffect(() => {
                 const initialPrinters = PRINTERS_DB[currentOffice].map(p => ({
-                    ...p, status: 'loading', message: 'Conectando...', ink: {bk:-1, c:-1, m:-1, y:-1, isMono: false}
+                    ...p, status: 'loading', message: 'Conectando...', ink: {gy:-1, bk:-1, r:-1, c:-1, m:-1, y:-1, isMono: false}
                 }));
                 setPrinters(initialPrinters);
                 updatePrinters(initialPrinters);
@@ -459,32 +592,35 @@
                         try {
                             html = await fetchWithTimeout(p.url);
                         } catch (e) {
-                            if (p.fallbackUrl) {
+                            if(p.fallbackUrl) {
                                 html = await fetchWithTimeout(p.fallbackUrl);
                             } else {
                                 throw e;
                             }
-                        }
+                        } 
 
+                        // AUTO-EXTRACTOR DE FRAMES PARA IMPRESORAS ANTIGUAS (RICOH)
                         if (html && (html.toLowerCase().includes('<frame') || html.toLowerCase().includes('<iframe'))) {
                             const frameMatch = html.match(/<frame[^>]+src=["']([^"']+)["']/i) || html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
                             if (frameMatch && !frameMatch[1].startsWith('javascript:')) {
                                 const framePath = frameMatch[1];
-                                const baseIp = p.url.split('/').slice(0,3).join('/'); 
+                                const baseIp = p.url.split('/').slice(0,3).join('/'); // Obtiene http://10.1.104.110
                                 const frameUrl = framePath.startsWith('http') ? framePath : `${baseIp}/${framePath.replace(/^\//, '')}`;
                                 try {
                                     const frameHtml = await fetchWithTimeout(frameUrl);
                                     html += "\n" + frameHtml; 
-                                } catch (e) {}
+                                } catch (e) {
+                                    // Ignorar error si no puede sacar el frame
+                                }
                             }
                         }
                         
-                        let parserFunc = Parsers.brother_dynamic_scanner;
+                        let parserFunc = Parsers.brother_dynamic_scanner; 
                         if (p.type && Parsers[p.type]) parserFunc = Parsers[p.type];
                         
                         const data = parserFunc(html);
                         
-                        // ALERTA GLOBAL: Verifica si hay algún color en 0% para forzar mensaje de Cambio de Tóner
+                        // --- ALERTA GLOBAL DE TÓNER VACÍO ---
                         if (data.status !== 'error' && data.ink) {
                             const isMonochrome = data.ink.isMono === true || 
                                                  (p.model && p.model.includes('M1212nf')) || 
@@ -492,17 +628,25 @@
                                                  (p.model && p.model.includes('L2540DW'));
                                                  
                             const isBlackEmpty = data.ink.bk === 0;
-                            const isColorEmpty = !isMonochrome && (data.ink.c === 0 || data.ink.m === 0 || data.ink.y === 0);
+                            
+                            let isColorEmpty = false;
+                            if (!isMonochrome) {
+                                isColorEmpty = data.ink.c === 0 || data.ink.m === 0 || data.ink.y === 0;
+                                // Extensión para la Canon de 6 colores
+                                if (p.type === 'canon_6colors') {
+                                    isColorEmpty = isColorEmpty || data.ink.gy === 0 || data.ink.r === 0;
+                                }
+                            }
 
                             if (isBlackEmpty || isColorEmpty) {
                                 data.status = 'warning';
-                                data.message = 'Cambio de Tóner';
+                                data.message = 'Cambio de Tóner/Tinta';
                             }
                         }
-
+                        
                         return { ...p, ...data };
                     } catch (err) {
-                        return { ...p, status: 'offline', message: 'Sin conexión', ink: {bk:-1, c:-1, m:-1, y:-1} };
+                        return { ...p, status: 'offline', message: 'Sin conexión', ink: {gy:-1, bk:-1, r:-1, c:-1, m:-1, y:-1} };
                     }
                 });
                 const results = await Promise.all(promises);
@@ -536,12 +680,16 @@
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {printers.map(p => {
-                            const currentStock = printerStock[p.id] || { bk: 0, c: 0, m: 0, y: 0 };
-                            // Filtro visual para impresoras Blanco y Negro en el dashboard
+                            const currentStock = printerStock[p.id] || { gy: 0, bk: 0, r: 0, c: 0, m: 0, y: 0 };
+                            
+                            // Filtro visual automático para impresoras Blanco y Negro
                             const showOnlyBlack = (p.ink && p.ink.isMono === true) || 
                                                   (p.model && p.model.includes('M1212nf')) || 
                                                   (p.type === 'ricoh_generic') ||
                                                   (p.model && p.model.includes('L2540DW'));
+                                                  
+                            // Variable correcta que detona la aparición del Gris y Rojo
+                            const is6Color = p.type === 'canon_6colors';
                                                   
                             return (
                                 <div key={p.id} className={`printer-card bg-white rounded-2xl border-l-[6px] p-6 flex flex-col justify-between ${p.status === 'online' ? 'border-green-500 shadow-sm' : p.status === 'warning' ? 'border-yellow-400 shadow-md ring-1 ring-yellow-100' : p.status === 'error' ? 'border-red-500 shadow-md ring-1 ring-red-100' : 'border-slate-300 opacity-80'}`}>
@@ -558,7 +706,10 @@
                                             <div className="flex justify-between items-end mb-2"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Niveles & Stock</span></div>
                                             {p.status !== 'offline' ? (
                                                 <div className="space-y-1">
+                                                    {is6Color && <InkBar label="GY" color="bg-slate-400" value={p.ink.gy} stock={currentStock.gy} printerUrl={p.adminUrl || p.url} />}
                                                     <InkBar label="BK" color="bg-slate-800" value={p.ink.bk} stock={currentStock.bk} printerUrl={p.adminUrl || p.url} />
+                                                    {is6Color && <InkBar label="R" color="bg-red-500" value={p.ink.r} stock={currentStock.r} printerUrl={p.adminUrl || p.url} />}
+                                                    
                                                     {!showOnlyBlack && (
                                                         <>
                                                             <InkBar label="C" color="bg-cyan-500" value={p.ink.c} stock={currentStock.c} printerUrl={p.adminUrl || p.url} />
@@ -580,11 +731,13 @@
                                         <div className="text-[10px] text-slate-400 bg-slate-50 p-2 rounded-lg mb-2">
                                             <span className="font-bold text-slate-500 block mb-1">📦 STOCK DISPONIBLE:</span>
                                             <div className="flex gap-2 font-mono flex-wrap">
-                                                <span className={currentStock.bk < 1 ? 'text-red-500 font-bold' : ''}>BK:{currentStock.bk}</span>
+                                                {is6Color && <span className={(currentStock.gy || 0) < 1 ? 'text-red-500 font-bold' : ''}>GY:{currentStock.gy || 0}</span>}
+                                                <span className={(currentStock.bk || 0) < 1 ? 'text-red-500 font-bold' : ''}>BK:{currentStock.bk || 0}</span>
+                                                {is6Color && <span className={(currentStock.r || 0) < 1 ? 'text-red-500 font-bold' : ''}>R:{currentStock.r || 0}</span>}
                                                 {!showOnlyBlack && (<>
-                                                    <span className={currentStock.c < 1 ? 'text-red-500 font-bold' : ''}>C:{currentStock.c}</span>
-                                                    <span className={currentStock.m < 1 ? 'text-red-500 font-bold' : ''}>M:{currentStock.m}</span>
-                                                    <span className={currentStock.y < 1 ? 'text-red-500 font-bold' : ''}>Y:{currentStock.y}</span>
+                                                    <span className={(currentStock.c || 0) < 1 ? 'text-red-500 font-bold' : ''}>C:{currentStock.c || 0}</span>
+                                                    <span className={(currentStock.m || 0) < 1 ? 'text-red-500 font-bold' : ''}>M:{currentStock.m || 0}</span>
+                                                    <span className={(currentStock.y || 0) < 1 ? 'text-red-500 font-bold' : ''}>Y:{currentStock.y || 0}</span>
                                                 </>)}
                                             </div>
                                         </div>
@@ -597,7 +750,7 @@
                             );
                         })}
                     </div>
-                    {selectedPrinterForStock && (<StockModal printer={selectedPrinterForStock} stock={printerStock[selectedPrinterForStock.id] || {bk:0, c:0, m:0, y:0}} onClose={() => setSelectedPrinterForStock(null)} onSave={handleSaveStock} />)}
+                    {selectedPrinterForStock && (<StockModal printer={selectedPrinterForStock} stock={printerStock[selectedPrinterForStock.id] || {gy:0, bk:0, r:0, c:0, m:0, y:0}} onClose={() => setSelectedPrinterForStock(null)} onSave={handleSaveStock} />)}
                 </div>
             );
         }
