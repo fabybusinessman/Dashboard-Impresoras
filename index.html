@@ -152,15 +152,26 @@
                     return { status: 'error', message: 'Lectura Bloqueada (API)', ink: { gy: -1, bk: -1, r: -1, c: -1, m: -1, y: -1, isMono: false } };
                 }
 
-                // Escala exacta de la Canon: 1=100%, 2=75%, 3=50%, 4=20%, 0=0%
+                // NUEVA ESCALA: El diagnóstico reveló que Canon usa niveles del 1 al 8+
                 const levelToPct = (lvl) => {
                     const l = parseInt(lvl);
-                    if (l === 1) return 100; // Lleno
-                    if (l === 2) return 75;  // Alto
-                    if (l === 3) return 50;  // Medio
-                    if (l === 4) return 20;  // Bajo
-                    if (l === 0) return 0;   // Vacío
-                    return -1;
+                    const map = {
+                        0: 0,   // Vacío
+                        1: 100, // Lleno
+                        2: 90,
+                        3: 80,
+                        4: 70,  // Coincide con tu captura R,C,M,Y
+                        5: 50,  // Coincide con tu captura GY, BK
+                        6: 30,
+                        7: 15,
+                        8: 5
+                    };
+                    
+                    // Retorna el porcentaje exacto del mapa
+                    if (map[l] !== undefined) return map[l];
+                    
+                    // Si Canon envía un número aún mayor (ej. 9 o 10), usamos un cálculo seguro
+                    return Math.max(100 - (l * 10), 0); 
                 };
 
                 // Función para extraer el valor con expresiones regulares
